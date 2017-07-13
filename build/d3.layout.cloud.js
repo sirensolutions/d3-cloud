@@ -22,6 +22,8 @@ module.exports = function() {
       timeInterval = Infinity,
       event = dispatch("word", "end"),
       timer = null,
+      // kibi: Adds overflow option to disable the auto cropping tags
+      overflow = false,
       random = Math.random,
       cloud = {},
       canvas = cloudCanvas;
@@ -121,7 +123,12 @@ module.exports = function() {
       tag.y = startY + dy;
 
       if (tag.x + tag.x0 < 0 || tag.y + tag.y0 < 0 ||
-          tag.x + tag.x1 > size[0] || tag.y + tag.y1 > size[1]) continue;
+          tag.x + tag.x1 > size[0] || tag.y + tag.y1 > size[1]) {
+        // kibi: Adds overflow option to disable the auto cropping tags
+        if (!overflow) {
+          continue;
+        }
+      }
       // TODO only check for collisions within current bounds.
       if (!bounds || !cloudCollide(tag, board, size[0])) {
         if (!bounds || collideRects(tag, bounds)) {
@@ -191,6 +198,13 @@ module.exports = function() {
 
   cloud.padding = function(_) {
     return arguments.length ? (padding = functor(_), cloud) : padding;
+  };
+
+  // kibi: Adds overflow option to disable the auto cropping tags
+  cloud.overflow = function(x) {
+    if (!arguments.length) return overflow;
+    overflow = d3.functor(x);
+    return cloud;
   };
 
   cloud.random = function(_) {
@@ -403,8 +417,12 @@ var spirals = {
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  factory((global.dispatch = {}));
+  (factory((global.d3_dispatch = {})));
 }(this, function (exports) { 'use strict';
+
+  function dispatch() {
+    return new Dispatch(arguments);
+  }
 
   function Dispatch(types) {
     var i = -1,
@@ -449,7 +467,8 @@ var spirals = {
         for (var otherType in callbacksByType) {
           if (callback = callbackByName[otherType + type.name]) {
             callback.value = null;
-            var callbacks = callbacksByType[otherType], i = callbacks.indexOf(callback);
+            callbacks = callbacksByType[otherType];
+            i = callbacks.indexOf(callback);
             callbacksByType[otherType] = callbacks.slice(0, i).concat(callbacks.slice(i + 1));
             delete callbackByName[callback.name];
           }
@@ -476,13 +495,12 @@ var spirals = {
     function applier(type) {
       return function() {
         var callbacks = callbacksByType[type], // Defensive reference; copy-on-remove.
-            callback,
             callbackValue,
             i = -1,
             n = callbacks.length;
 
         while (++i < n) {
-          if (callbackValue = (callback = callbacks[i]).value) {
+          if (callbackValue = callbacks[i].value) {
             callbackValue.apply(this, arguments);
           }
         }
@@ -492,12 +510,11 @@ var spirals = {
     }
   }
 
-  function dispatch() {
-    return new Dispatch(arguments);
-  }
+  dispatch.prototype = Dispatch.prototype;
 
-  dispatch.prototype = Dispatch.prototype; // allow instanceof
+  var version = "0.2.6";
 
+  exports.version = version;
   exports.dispatch = dispatch;
 
 }));

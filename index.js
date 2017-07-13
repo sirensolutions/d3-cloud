@@ -21,6 +21,8 @@ module.exports = function() {
       timeInterval = Infinity,
       event = dispatch("word", "end"),
       timer = null,
+      // kibi: Adds overflow option to disable the auto cropping tags
+      overflow = false,
       random = Math.random,
       cloud = {},
       canvas = cloudCanvas;
@@ -120,7 +122,12 @@ module.exports = function() {
       tag.y = startY + dy;
 
       if (tag.x + tag.x0 < 0 || tag.y + tag.y0 < 0 ||
-          tag.x + tag.x1 > size[0] || tag.y + tag.y1 > size[1]) continue;
+          tag.x + tag.x1 > size[0] || tag.y + tag.y1 > size[1]) {
+        // kibi: Adds overflow option to disable the auto cropping tags
+        if (!overflow) {
+          continue;
+        }
+      }
       // TODO only check for collisions within current bounds.
       if (!bounds || !cloudCollide(tag, board, size[0])) {
         if (!bounds || collideRects(tag, bounds)) {
@@ -190,6 +197,13 @@ module.exports = function() {
 
   cloud.padding = function(_) {
     return arguments.length ? (padding = functor(_), cloud) : padding;
+  };
+
+  // kibi: Adds overflow option to disable the auto cropping tags
+  cloud.overflow = function(x) {
+    if (!arguments.length) return overflow;
+    overflow = d3.functor(x);
+    return cloud;
   };
 
   cloud.random = function(_) {
